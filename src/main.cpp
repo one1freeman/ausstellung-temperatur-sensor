@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include "credentials.h"
 
-#define OW_TEMP 13
+#define OW_TEMP 17
 
 OneWire tempWire(OW_TEMP);
 DallasTemperature sensors(&tempWire);
@@ -27,7 +27,14 @@ bool apConnect() {
         Serial.print(".");
         delay(500);
     }
+    Serial.println("Connected to the AP");
+    Serial.print("Local ESP32 IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("RSSI:");
+    Serial.println(WiFi.RSSI());
+    return true;
 }
+
 void setup()
 {
     Serial.begin(9600);
@@ -37,13 +44,6 @@ void setup()
     delay(200);
 
     WiFi.mode(WIFI_STA);
-    
-    
-    Serial.println("\nConnected to the AP");
-    Serial.print("Local ESP32 IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("RSSI:");
-    Serial.println(WiFi.RSSI());
     Serial.println("Setup finished!");
 }
 
@@ -51,11 +51,15 @@ void loop()
 {
     if (WiFi.status() == WL_CONNECTED)
     {
-        client.connect("MasterESP", 80);
-        if (client.connected())
+        if (client.connect("192.168.4.1", 80))
         {
-            client.println(sensors.getTempCByIndex(0));
+            float temp = sensors.getTempCByIndex(0);
+            client.print(String(temp).c_str());
             client.println("$POST");
+            delay(3000);
+            client.stop();
+            Serial.println(temp);
+            Serial.println("disconnected!");
         } else
         {
             Serial.println("Connected to AP but not to Server!");
@@ -65,9 +69,8 @@ void loop()
         Serial.println("Disconnected from WiFi!");
         if (!apConnect())
         {
-            Serial.println("New attempt in 5 seconds.");
-            delay(4000);   
+            Serial.println("New attempt in 5 seconds.");   
         }
     }
-    delay(1000);
+    delay(5000);
 }
