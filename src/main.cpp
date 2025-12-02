@@ -1,6 +1,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <WiFi.h>
+// with http client
+#include <HTTPClient.h>
 #include "credentials.h"
 
 #define OW_TEMP 17
@@ -8,7 +10,7 @@
 OneWire tempWire(OW_TEMP);
 DallasTemperature sensors(&tempWire);
 
-WiFiClient client(80);
+HTTPClient client;
 
 bool apConnect() {
     Serial.print("Attempting to connect to: ");
@@ -23,7 +25,6 @@ bool apConnect() {
             Serial.println("Failed to connnect!");
             return false;
         }
-
         Serial.print(".");
         delay(500);
     }
@@ -51,15 +52,23 @@ void loop()
 {
     if (WiFi.status() == WL_CONNECTED)
     {
-        if (client.connect("192.168.4.1", 80))
+        if (client.begin("http://192.168.4.1/temp"))
         {
             float temp = sensors.getTempCByIndex(0);
-            client.print(String(temp).c_str());
-            client.println("$POST");
-            delay(3000);
-            client.stop();
             Serial.println(temp);
+            int httpCode = client.POST(String(temp));
+            if (httpCode > 0) {
+                // file found at server
+                if (httpCode == HTTP_CODE_OK) {
+                    Serial.println("OK!");
+                }
+            } else {
+            Serial.printf("[HTTP] POST... failed, error: %s\n", client.errorToString(httpCode).c_str());
+            }
+
+            client.end();
             Serial.println("disconnected!");
+            delay(3000);
         } else
         {
             Serial.println("Connected to AP but not to Server!");
