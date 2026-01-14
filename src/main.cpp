@@ -5,7 +5,7 @@
 #include <HTTPClient.h>
 #include "credentials.h"
 
-#define OW_TEMP 17
+#define OW_TEMP 27
 
 OneWire tempWire(OW_TEMP);
 DallasTemperature sensors(&tempWire);
